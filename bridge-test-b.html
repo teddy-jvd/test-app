@@ -235,19 +235,19 @@
   <div class="section-title">模擬 App 發送（測試用）</div>
   <span class="dir-label dir-in">↓ 模擬 App → Web</span>
   <div class="btn-grid">
-    <button class="btn btn-neutral" onclick="mockDispatch('PUSH_NOTIFICATION',{title:'測試推播 B',body:'來自頁面B的模擬推播',data:{screen:'product',id:'456'}})">
+    <button class="btn btn-neutral" onclick="mockPush()">
       <span class="bicon">🔔</span><span>模擬推播</span>
       <span class="btype">PUSH_NOTIFICATION</span>
     </button>
-    <button class="btn btn-neutral" onclick="mockDispatch('APP_STATE_CHANGE',{state:'background',timestamp:Date.now()})">
+    <button class="btn btn-neutral" onclick="mockStateBackground()">
       <span class="bicon">📲</span><span>App 切背景</span>
       <span class="btype">APP_STATE_CHANGE</span>
     </button>
-    <button class="btn btn-neutral" onclick="mockDispatch('APP_STATE_CHANGE',{state:'active',timestamp:Date.now()})">
+    <button class="btn btn-neutral" onclick="mockStateActive()">
       <span class="bicon">☀️</span><span>App 回前景</span>
       <span class="btype">APP_STATE_CHANGE</span>
     </button>
-    <button class="btn btn-neutral" onclick="mockDispatch('DEEP_LINK',{url:'myapp://page-b/sale?code=SUMMER',params:{code:'SUMMER'}})">
+    <button class="btn btn-neutral" onclick="mockDeepLink()">
       <span class="bicon">🔗</span><span>模擬 Deep Link</span>
       <span class="btype">DEEP_LINK</span>
     </button>
@@ -316,6 +316,26 @@
   // 模擬 App 派送
   function mockDispatch(type, payload) {
     window.ReactNativeBridge._dispatch({ type: type, payload: payload });
+  }
+
+  function mockPush() {
+    mockDispatch('PUSH_NOTIFICATION', {
+      title: '測試推播 B',
+      body: '來自頁面B的模擬推播',
+      data: { screen: 'product', id: '456' }
+    });
+  }
+
+  function mockStateBackground() {
+    mockDispatch('APP_STATE_CHANGE', { state: 'background', timestamp: Date.now() });
+  }
+
+  function mockStateActive() {
+    mockDispatch('APP_STATE_CHANGE', { state: 'active', timestamp: Date.now() });
+  }
+
+  function mockDeepLink() {
+    mockDispatch('DEEP_LINK', { url: 'myapp://page-b/sale?code=SUMMER', params: { code: 'SUMMER' } });
   }
 
   function clearLog() {
