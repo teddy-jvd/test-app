@@ -353,7 +353,7 @@
       setField('r-platform', d.platform);
       setField('r-osVersion', d.osVersion);
       setField('r-appVersion', d.appVersion);
-      if (p && p.fcmToken) setField('r-fcmToken', String(p.fcmToken).substring(0,24)+'…');
+      if (p && p.fcmToken) setField('r-fcmToken', String(p.fcmToken));
       if (p && p.launchSource) setField('r-launchSource', p.launchSource);
       appendLog('log-in', '↓ TOKEN_RESPONSE deviceId=' + d.deviceId + ' platform=' + d.platform);
     });
