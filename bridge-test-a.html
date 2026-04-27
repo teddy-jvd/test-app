@@ -167,7 +167,7 @@
       <span class="bicon">📊</span><span>追蹤事件</span>
       <span class="btype">TRACK_EVENT</span>
     </button>
-    <button class="btn btn-warning" onclick="send('OPEN_MODAL','https://example.com/about')">
+    <button class="btn btn-warning" onclick="send('OPEN_MODAL','http://localhost:8080/bridge-test-b.html')">
       <span class="bicon">📱</span><span>開啟 Modal</span>
       <span class="btype">OPEN_MODAL</span>
     </button>
@@ -257,6 +257,49 @@
   </div>
 </div>
 
+<!-- 新功能測試 -->
+<div class="section" style="margin-top:14px;">
+  <div class="section-title">新功能測試</div>
+
+  <!-- 螢幕旋轉 -->
+  <span class="dir-label dir-out">↑ SET_ORIENTATION</span>
+  <div class="btn-grid" style="margin-bottom:10px;">
+    <button class="btn btn-primary" onclick="send('SET_ORIENTATION',{orientation:'landscape'})">
+      <span class="bicon">🔄</span><span>橫向</span>
+      <span class="btype">landscape</span>
+    </button>
+    <button class="btn btn-primary" onclick="send('SET_ORIENTATION',{orientation:'portrait'})">
+      <span class="bicon">📱</span><span>縱向</span>
+      <span class="btype">portrait</span>
+    </button>
+    <button class="btn btn-neutral btn-full" onclick="send('SET_ORIENTATION',{orientation:'auto'})">
+      <span class="bicon">🔀</span><span>自動（跟隨感測器）</span>
+      <span class="btype">auto</span>
+    </button>
+  </div>
+
+  <!-- 相機 / 圖庫上傳 -->
+  <span class="dir-label dir-out" style="margin-top:4px;">檔案上傳（原生 input）</span>
+  <div class="btn-grid">
+    <label class="btn btn-success" style="cursor:pointer;">
+      <span class="bicon">🖼️</span><span>選取圖片</span>
+      <span class="btype">gallery</span>
+      <input type="file" accept="image/*" style="display:none;" onchange="onFileChosen(this,'gallery')">
+    </label>
+    <label class="btn btn-info" style="cursor:pointer;">
+      <span class="bicon">📷</span><span>拍照上傳</span>
+      <span class="btype">camera</span>
+      <input type="file" accept="image/*" capture="camera" style="display:none;" onchange="onFileChosen(this,'camera')">
+    </label>
+    <label class="btn btn-neutral btn-full" style="cursor:pointer;">
+      <span class="bicon">📁</span><span>任意檔案</span>
+      <span class="btype">any file</span>
+      <input type="file" style="display:none;" onchange="onFileChosen(this,'any')">
+    </label>
+  </div>
+  <div id="file-result" style="font-size:11px;color:#6b7280;margin-top:6px;min-height:16px;"></div>
+</div>
+
 <!-- 訊息紀錄 -->
 <div class="section" style="margin-top:14px;">
   <div class="section-title">訊息紀錄</div>
@@ -336,6 +379,17 @@
 
   function mockDeepLink() {
     mockDispatch('DEEP_LINK', { url: 'myapp://page-a/promo?id=123', params: { id: '123' } });
+  }
+
+  function onFileChosen(input, source) {
+    var f = input.files && input.files[0];
+    var el = document.getElementById('file-result');
+    if (f) {
+      el.textContent = '✅ [' + source + '] ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB, ' + f.type + ')';
+      appendLog('log-ok', '檔案選取成功 [' + source + '] ' + f.name);
+    } else {
+      el.textContent = '（未選取）';
+    }
   }
 
   function clearLog() {
