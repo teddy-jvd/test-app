@@ -167,9 +167,13 @@
       <span class="bicon">📊</span><span>追蹤事件</span>
       <span class="btype">TRACK_EVENT</span>
     </button>
-    <button class="btn btn-warning" onclick="send('OPEN_MODAL','http://localhost:8080/bridge-test-a.html')">
+    <button class="btn btn-warning" onclick="send('OPEN_MODAL','https://randomstreetview.com/')">
       <span class="bicon">📱</span><span>開啟 Modal</span>
       <span class="btype">OPEN_MODAL</span>
+    </button>
+    <button class="btn btn-danger" onclick="send('OPEN_OVERLAY','https://randomstreetview.com/')">
+      <span class="bicon">🪟</span><span>開啟 Overlay</span>
+      <span class="btype">OPEN_OVERLAY</span>
     </button>
     <button class="btn btn-info" onclick="send('HAPTIC',{type:'success'})">
       <span class="bicon">📳</span><span>觸覺回饋</span>
