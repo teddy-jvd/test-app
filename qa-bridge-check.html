@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QA Bridge Check</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #111; color: #fff; }
+    header { padding: 18px 16px; background: #222; border-bottom: 1px solid #333; }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    p { margin: 0; color: #bbb; font-size: 13px; }
+    main { padding: 14px; display: grid; gap: 10px; }
+    button { min-height: 46px; border: 0; border-radius: 8px; background: #4a90e2; color: #fff; font-size: 15px; font-weight: 700; }
+    button.secondary { background: #555; }
+    button.warn { background: #c27803; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #000; border: 1px solid #333; border-radius: 8px; padding: 10px; min-height: 160px; color: #9ef29e; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>QA Bridge Check</h1>
+    <p>用於驗證 ReactNativeBridge、legacy jsBridge、playerLogin。</p>
+  </header>
+  <main>
+    <button onclick="sendReactNativeBridge()">ReactNativeBridge GET_TOKEN</button>
+    <button onclick="sendAppsflyer()">Legacy Appsflyer</button>
+    <button onclick="sendAdjust()">Legacy Adjust</button>
+    <button onclick="sendWebkit()" class="secondary">iOS webkit legacy format</button>
+    <button onclick="sendPlayerLogin()" class="warn">JVD playerLogin</button>
+    <pre id="log"></pre>
+  </main>
+  <script>
+    const logEl = document.getElementById('log');
+    function log(message, data) {
+      const line = `[${new Date().toLocaleTimeString()}] ${message}` +
+        (data === undefined ? '' : `\n${JSON.stringify(data, null, 2)}`);
+      logEl.textContent = `${line}\n\n${logEl.textContent}`;
+    }
+
+    function setupListeners() {
+      if (!window.ReactNativeBridge || !window.ReactNativeBridge.on) {
+        log('ReactNativeBridge not ready yet');
+        return;
+      }
+      window.ReactNativeBridge.on('TOKEN_RESPONSE', payload => log('TOKEN_RESPONSE received', payload));
+      window.ReactNativeBridge.on('PUSH_NOTIFICATION', payload => log('PUSH_NOTIFICATION received', payload));
+      window.ReactNativeBridge.on('DEEP_LINK', payload => log('DEEP_LINK received', payload));
+      log('ReactNativeBridge ready');
+    }
+
+    window.addEventListener('ReactNativeBridgeReady', setupListeners);
+    setTimeout(setupListeners, 500);
+
+    function sendReactNativeBridge() {
+      if (!window.ReactNativeBridge) return log('ReactNativeBridge missing');
+      window.ReactNativeBridge.postMessage('GET_TOKEN', null);
+      log('sent GET_TOKEN');
+    }
+
+    function sendAppsflyer() {
+      if (!window.jsBridge) return log('jsBridge missing');
+      window.jsBridge.postMessage('Appsflyer', {
+        eventName: 'qa_appsflyer',
+        source: 'qa-bridge-check'
+      });
+      log('sent legacy Appsflyer');
+    }
+
+    function sendAdjust() {
+      if (!window.jsBridge) return log('jsBridge missing');
+      window.jsBridge.postMessage('Adjust', {
+        eventName: 'qa_adjust',
+        source: 'qa-bridge-check'
+      });
+      log('sent legacy Adjust');
+    }
+
+    function sendWebkit() {
+      if (!window.webkit || !window.webkit.messageHandlers || !window.webkit.messageHandlers.jsBridge) {
+        return log('webkit.messageHandlers.jsBridge missing');
+      }
+      window.webkit.messageHandlers.jsBridge.postMessage({
+        tool: 'Appsflyer',
+        eventName: 'qa_ios_webkit_legacy',
+        options: { source: 'qa-bridge-check' }
+      });
+      log('sent webkit legacy payload');
+    }
+
+    function sendPlayerLogin() {
+      if (!window.jsBridge) return log('jsBridge missing');
+      window.jsBridge.postMessage('playerLogin', { account: 'qa_user_001' });
+      log('sent playerLogin qa_user_001');
+    }
+  </script>
+</body>
+</html>
