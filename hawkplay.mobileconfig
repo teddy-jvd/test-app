@@ -32,7 +32,7 @@
       <key>PayloadDisplayName</key>
       <string>Hawkplay</string>
       <key>URL</key>
-      <string>https://www.hawkplay.com</string>
+      <string>https://webclip.teddy-h.workers.dev/hawkplay</string>
       <key>Label</key>
       <string>Hawkplay</string>
       <key>Icon</key>
