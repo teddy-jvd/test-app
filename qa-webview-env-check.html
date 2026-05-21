@@ -2,11 +2,15 @@
 <html lang="zh-TW">
 <head>
   <meta charset="utf-8" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Hawkplay">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>QA WebView Environment Check</title>
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="description" content="QA tool: inspect userAgent, WebView bridge and runtime capabilities." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QA Env" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22112%22%20fill%3D%22%230b0f14%22%2F%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%22432%22%20height%3D%22432%22%20rx%3D%2280%22%20fill%3D%22none%22%20stroke%3D%22%234a90e2%22%20stroke-width%3D%2214%22%2F%3E%3Ctext%20x%3D%22256%22%20y%3D%22318%22%20text-anchor%3D%22middle%22%20font-family%3D%22-apple-system%2CBlinkMacSystemFont%2C%27Segoe%20UI%27%2Csans-serif%22%20font-size%3D%22196%22%20font-weight%3D%22800%22%20fill%3D%22%23eef5fb%22%3EQA%3C%2Ftext%3E%3C%2Fsvg%3E" />
   <style>
     :root {
       color-scheme: dark;
@@ -221,7 +225,7 @@
 <body>
   <header>
     <h1>QA WebView Environment Check</h1>
-    <p>顯示目前 userAgent、App WebView bridge、瀏覽器能力與裝置環境，用來比對 App 內載入與直接用瀏覽器開啟的差異。 add meta</p>
+    <p>顯示目前 userAgent、App WebView bridge、瀏覽器能力與裝置環境，用來比對 App 內載入與直接用瀏覽器開啟的差異。</p>
   </header>
 
   <main>
@@ -232,6 +236,7 @@
       <button type="button" class="secondary" onclick="copyReport()">複製完整報告</button>
       <button type="button" class="warn" onclick="sendGetToken()">Bridge GET_TOKEN</button>
       <button type="button" class="secondary" onclick="clearLog()">清空 log</button>
+      <button type="button" id="installBtn" hidden onclick="promptInstall()">安裝為 PWA</button>
     </div>
 
     <section>
@@ -519,6 +524,67 @@
     refresh();
     setTimeout(setupBridgeListeners, 300);
     setTimeout(refresh, 1200);
+
+    (function setupPwaManifest() {
+      try {
+        var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
+          '<rect width="512" height="512" rx="112" fill="#0b0f14"/>' +
+          '<rect x="40" y="40" width="432" height="432" rx="80" fill="none" stroke="#4a90e2" stroke-width="14"/>' +
+          '<text x="256" y="318" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="196" font-weight="800" fill="#eef5fb">QA</text>' +
+          '</svg>';
+        var iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(iconSvg);
+        var manifest = {
+          name: 'QA WebView Environment Check',
+          short_name: 'QA Env',
+          description: 'Inspect userAgent, WebView bridge and runtime capabilities.',
+          start_url: location.href,
+          scope: location.href.replace(/[^/]*$/, ''),
+          display: 'standalone',
+          orientation: 'portrait',
+          background_color: '#0b0f14',
+          theme_color: '#0b0f14',
+          icons: [
+            { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
+            { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
+          ]
+        };
+        var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        var link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+        log('manifest registered (scope: ' + manifest.scope + ')');
+      } catch (error) {
+        log('manifest setup failed: ' + (error && error.message ? error.message : error));
+      }
+    })();
+
+    var deferredInstallPrompt = null;
+    var installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', function(event) {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      installBtn.hidden = false;
+      log('install prompt available');
+    });
+    window.addEventListener('appinstalled', function() {
+      installBtn.hidden = true;
+      deferredInstallPrompt = null;
+      log('PWA installed');
+    });
+    function promptInstall() {
+      if (!deferredInstallPrompt) {
+        log('install prompt unavailable; on iOS use Safari Share → Add to Home Screen');
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(function(choice) {
+        log('install choice: ' + choice.outcome);
+        deferredInstallPrompt = null;
+        installBtn.hidden = true;
+      });
+    }
+
   </script>
 </body>
 </html>
