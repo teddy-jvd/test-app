@@ -1,1 +1,13 @@
-{"appUrl":"https://new-fatcat-dev.panpancat.click/", "merchantApiBaseUrl": "https://ted-test.zeabur.app/", "signalApiUrl": "https://ted-test.zeabur.app/", "siteCode": "REMOTE_SITE_CODE", "features":{ "debugPanel": true },"maintenance":{"enabled":false,"message":""}}
+{
+  "appUrl": "https://teddy-jvd.github.io/test-app/qa-webview-env-check.html",
+  "merchantApiBaseUrl": "https://cmcat.jvdev.cc",
+  "signalApiUrl": "https://signal-public.micromicro.work/v1/events",
+  "siteCode": "REMOTE_SITE_CODE",
+  "features": {
+    "debugPanel": true
+  },
+  "maintenance": {
+    "enabled": false,
+    "message": ""
+  }
+}
