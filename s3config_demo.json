@@ -1,5 +1,7 @@
 {
-  "appUrl": "https://new-fatcat-dev.panpancat.click/",
+  "appUrl": "https://teddy-jvd.github.io/test-app/full-debug.html",
+  "dev_appUrl": "https://new-fatcat-dev.panpancat.click/",
+  "test_url": "https://teddy-jvd.github.io/test-app/full-debug.html",
   "merchantApiBaseUrl": "https://cmcat.jvdev.cc",
   "signalApiUrl": "https://signal-public.micromicro.work/v1/events",
   "siteCode": "REMOTE_SITE_CODE",
