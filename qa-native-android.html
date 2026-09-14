@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>原生 Android 驗收測試頁</title>
+  <script>
+    // 必須是本頁第一段腳本：注入腳本若真的跑在 document-start，這裡就已經看得到 bridge。
+    window.__early = {
+      bridge: typeof window.ReactNativeBridge,
+      transport: typeof (window.ReactNativeWebView || {}).postMessage,
+      flag: !!(window.ReactNativeBridge && window.ReactNativeBridge._isNativeBridge),
+      jsBridge: typeof window.jsBridge,
+      webkit: typeof ((window.webkit || {}).messageHandlers || {}).jsBridge,
+      ready: false,
+    };
+    window.addEventListener('ReactNativeBridgeReady', function () { window.__early.ready = true; });
+  </script>
+  <style>
+    :root {
+      --bg: #0f1216;
+      --panel: #171c22;
+      --panel-2: #1e242c;
+      --line: #2a323b;
+      --text: #e8ecf1;
+      --dim: #93a1b0;
+      --blue: #4a90e2;
+      --green: #3fb26b;
+      --red: #e05252;
+      --amber: #d69215;
+      --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: rgba(74,144,226,.2); }
+    body {
+      margin: 0; padding-bottom: 64px;
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Segoe UI", sans-serif;
+      font-size: 15px; line-height: 1.55;
+    }
+    header { padding: 14px 14px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    h1 { margin: 0; font-size: 17px; letter-spacing: .01em; }
+    .env { margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--dim); overflow-wrap: anywhere; }
+    .env b { color: var(--text); font-weight: 600; }
+
+    nav { position: sticky; top: 0; z-index: 10; display: flex; gap: 6px; overflow-x: auto;
+          padding: 8px 14px; background: rgba(15,18,22,.94); border-bottom: 1px solid var(--line);
+          backdrop-filter: blur(8px); }
+    nav a { flex: 0 0 auto; padding: 5px 10px; border: 1px solid var(--line); border-radius: 14px;
+            color: var(--dim); text-decoration: none; font-size: 12px; }
+    nav a:active { color: var(--text); border-color: var(--blue); }
+
+    main { padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+    section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; scroll-margin-top: 52px; }
+    h2 { margin: 0; font-size: 13px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; font-weight: 600; }
+    .hint { margin: 0; font-size: 12.5px; color: var(--dim); }
+    .hint b { color: var(--amber); font-weight: 600; }
+
+    .banner { padding: 10px 12px; border-radius: 8px; font-size: 13px; border: 1px solid; }
+    .banner.ok { background: rgba(63,178,107,.12); border-color: var(--green); color: #b9f0cf; }
+    .banner.warn { background: rgba(214,146,21,.12); border-color: var(--amber); color: #f3dca6; }
+
+    .t { display: grid; grid-template-columns: 3.6rem minmax(0,1fr) auto; gap: 10px; align-items: center;
+         padding: 9px 10px; background: var(--panel); border: 1px solid var(--line);
+         border-left: 3px solid var(--line); border-radius: 8px; }
+    .t.risk { border-left-color: var(--amber); }
+    .t-id { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+    .t-b { min-width: 0; }
+    .t-title { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+    .t-exp { font-size: 12px; color: var(--dim); margin-top: 1px; overflow-wrap: anywhere; }
+    .t-exp code, .env code { font-family: var(--mono); font-size: 11.5px; color: #a9c6e6; }
+    .go { flex: 0 0 auto; min-height: 40px; min-width: 62px; padding: 0 14px;
+          border: 0; border-radius: 7px; background: var(--blue); color: #fff;
+          font: 600 14px/40px inherit; text-align: center; text-decoration: none; cursor: pointer; }
+    .go.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+    .t-act { display: flex; gap: 6px; align-items: center; }
+    .go.warn { background: var(--amber); }
+    .go:active { opacity: .7; }
+
+    .chk { display: grid; grid-template-columns: 3.6rem minmax(0,1fr) auto; gap: 10px; align-items: center;
+           padding: 7px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+    .pill { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .pill.pass { background: rgba(63,178,107,.18); color: #7fe0a5; }
+    .pill.fail { background: rgba(224,82,82,.18); color: #ff9a9a; }
+    .pill.info { background: rgba(147,161,176,.16); color: var(--dim); }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    input[type=text] {
+      flex: 1; min-width: 8rem; min-height: 40px; padding: 0 10px;
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px;
+      color: var(--text); font-family: var(--mono); font-size: 13px;
+    }
+    input:focus { outline: none; border-color: var(--blue); }
+
+    pre.out { margin: 0; padding: 10px; background: #080b0e; border: 1px solid var(--line);
+              border-radius: 8px; font-family: var(--mono); font-size: 11.5px; color: #9ef29e;
+              white-space: pre-wrap; word-break: break-word; max-height: 40vh; overflow: auto; }
+    #frameBox:empty, #junkBox:empty { display: none; }
+    iframe { width: 100%; height: 110px; border: 1px dashed var(--line); border-radius: 8px; background: #000; }
+
+    .drawer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+              background: var(--panel); border-top: 1px solid var(--line); }
+    .drawer-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
+    .drawer-bar .last { flex: 1; min-width: 0; font-family: var(--mono); font-size: 11px; color: var(--dim);
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .drawer-body { display: none; padding: 0 14px 14px; }
+    .drawer.open .drawer-body { display: block; }
+    .drawer.open { max-height: 70vh; overflow: auto; }
+
+    .layer-tag { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 2px 7px;
+                 border-radius: 4px; background: var(--blue); color: #fff; margin-left: 6px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>原生 Android 驗收測試頁<span id="layerTag"></span></h1>
+  <div class="env" id="env">讀取中…</div>
+</header>
+
+<nav id="nav"></nav>
+
+<main id="main"></main>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-bar" onclick="document.getElementById('drawer').classList.toggle('open')">
+    <span class="go ghost" style="min-width:auto;padding:0 10px;line-height:32px;min-height:32px">Log</span>
+    <span class="last" id="lastLine">尚無訊息</span>
+    <span class="go ghost" style="min-width:auto;padding:0 10px;line-height:32px;min-height:32px"
+          onclick="event.stopPropagation();clearLog()">清除</span>
+  </div>
+  <div class="drawer-body"><pre class="out" id="log"></pre></div>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────
+   基本工具
+   ──────────────────────────────────────────────────────────── */
+const qs = new URLSearchParams(location.search);
+const LAYER = qs.get('layer') || 'main';
+const SELF = location.origin + location.pathname;
+const IN_APP = / JVDApp Android /.test(navigator.userAgent);
+const logEl = document.getElementById('log');
+const lastEl = document.getElementById('lastLine');
+
+function log(msg, data) {
+  const line = '[' + new Date().toLocaleTimeString() + '] ' + msg +
+    (data === undefined ? '' : '\n' + JSON.stringify(data, null, 2));
+  logEl.textContent = line + '\n\n' + logEl.textContent;
+  lastEl.textContent = msg;
+}
+function clearLog() { logEl.textContent = ''; lastEl.textContent = '已清除'; }
+
+function send(type, payload) {
+  if (!window.ReactNativeBridge) return log('✗ ReactNativeBridge 不存在，無法送 ' + type);
+  window.ReactNativeBridge.postMessage(type, payload);
+  log('→ ' + type, payload);
+}
+function raw(json) {
+  if (!window.ReactNativeWebView) return log('✗ ReactNativeWebView 不存在');
+  window.ReactNativeWebView.postMessage(json);
+  log('→ raw: ' + json);
+}
+function selfUrl(extra) { return SELF + '?' + extra; }
+function el(tag, cls, html) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined) n.innerHTML = html;
+  return n;
+}
+
+/* 點擊足跡：離開本頁再回來時還能知道剛剛點了什麼 */
+function trace(id) {
+  try { sessionStorage.setItem('qaLastClick', JSON.stringify({ id: id, t: Date.now() })); } catch (e) {}
+}
+
+/* ────────────────────────────────────────────────────────────
+   測試項定義
+   ──────────────────────────────────────────────────────────── */
+
+/* §4 連結攔截：留在本頁、可連續點 */
+const LINKS_SAFE = [
+  { id: 'L-01', title: '同源一般路徑', exp: '就地載入（本頁會重新載入並顯示成功橫幅）', href: selfUrl('nav=L-01') },
+  { id: 'L-02', title: '同源 /loading', exp: '開 outside 層（全螢幕＋右上浮動膠囊）。顯示 404 也算通過', href: '/loading' },
+  { id: 'L-03', title: '同源 /service', exp: '開 outside 層', href: '/service' },
+  { id: 'L-04', title: '同源 /service/chat', exp: '開 outside 層（子路徑同樣命中）', href: '/service/chat' },
+  { id: 'L-04', title: '同源 /loading/x', exp: '開 outside 層', href: '/loading/x' },
+  { id: 'L-06', title: '跨源 https', exp: '跳出 App，系統瀏覽器開啟', href: 'https://example.com' },
+  { id: 'L-07', title: '同 host 不同 port', exp: '視為跨源 → 系統瀏覽器', href: '' /* 動態 */ },
+  { id: 'L-08', title: 'tel:', exp: '開系統撥號', href: 'tel:0912345678' },
+  { id: 'L-09', title: 'mailto:', exp: '開郵件 App', href: 'mailto:qa@example.com' },
+  { id: 'L-10', title: 'sms:', exp: '開簡訊 App', href: 'sms:0912345678' },
+  { id: 'L-11', title: 'market://', exp: '開 Google Play', href: 'market://details?id=com.android.chrome' },
+  { id: 'L-12', title: 'itms-apps://', exp: 'Android 無對應 App → logcat warn「無法開啟外部連結」，不可 crash', href: 'itms-apps://itunes.apple.com/app/id1' },
+  { id: 'L-13', title: 'intent:（安全攔截）', exp: '完全不做事，頁面不動', href: 'intent://example.com/#Intent;scheme=https;package=com.android.chrome;end' },
+  { id: 'L-14', title: 'about:blank', exp: '完全不做事，頁面不動', href: 'about:blank' },
+  { id: 'L-15', title: 'target="_blank" 同源', exp: '就地載入（證明沒被丟棄），回到本頁', href: selfUrl('nav=L-15'), blank: true },
+  { id: 'L-15', title: 'target="_blank" 跨源', exp: '系統瀏覽器開啟，不可靜默消失', href: 'https://example.com/?blank=1', blank: true },
+];
+
+/* §4 連結攔截：會把主畫面帶走，點完需重開 App */
+const LINKS_RISKY = [
+  { id: 'L-05', title: '同源 /services（相似路徑）', exp: '就地載入，<b>不可</b>進 outside 層', href: '/services' },
+  { id: 'L-05', title: '同源 /loadings（相似路徑）', exp: '就地載入，<b>不可</b>進 outside 層', href: '/loadings' },
+];
+
+/* §5 分層 + §6 Bridge 訊息 */
+const ACTIONS_LAYER = [
+  { id: 'W-01', title: 'OPEN_MODAL', exp: '全螢幕 Modal 開啟並載入本頁（modal 版）', run: () => send('OPEN_MODAL', selfUrl('layer=modal')) },
+  { id: 'W-04', title: 'OPEN_MODAL 換 URL', exp: 'Modal 已開時再送 → 同一個 Modal 換頁，不疊第二層', run: () => send('OPEN_MODAL', selfUrl('layer=modal&v=2')) },
+  { id: 'W-05', title: 'OPEN_OVERLAY', exp: '下方 60% 高度面板升起＋浮動膠囊', run: () => send('OPEN_OVERLAY', selfUrl('layer=overlay')) },
+  { id: 'W-06', title: 'OPEN_OVERLAY 壞網址', exp: 'Overlay 載入失敗 → <b>自動關閉</b>，不留空白面板', run: () => send('OPEN_OVERLAY', 'https://this-host-does-not-exist.invalid/') },
+  { id: 'W-10', title: 'main 層送 CLOSE_OVERLAY', exp: '什麼都不發生，不報錯', run: () => send('CLOSE_OVERLAY', null) },
+  { id: 'W-03', title: 'main 層送 CLOSE_MODAL', exp: 'Modal 開著就關掉；沒開則無事發生', run: () => send('CLOSE_MODAL', null) },
+];
+
+const ACTIONS_BRIDGE = [
+  { id: 'J-10', title: 'GET_TOKEN', exp: '回 TOKEN_RESPONSE，下方欄位面板自動判定 J-30～J-35', run: () => send('GET_TOKEN', null) },
+  { id: 'J-15', title: 'NAVIGATE（main 層）', exp: '主 WebView 導到本頁並顯示成功橫幅', run: () => send('NAVIGATE', { url: selfUrl('nav=J-15') }) },
+  { id: 'J-17', title: 'NAVIGATE 傳純字串', exp: '無反應（payload 必須是物件），不 crash', run: () => send('NAVIGATE', selfUrl('nav=J-17')) },
+  { id: 'J-18', title: 'TRACK_EVENT', exp: '不 crash；provider 全為 no-op，不應有第三方請求', run: () => send('TRACK_EVENT', { eventName: 'qa_test_event', properties: { s: 'x', n: 123, b: true, f: 1.5 } }) },
+  { id: 'J-22', title: 'SET_ORIENTATION landscape', exp: '鎖橫式', run: () => send('SET_ORIENTATION', { orientation: 'landscape' }) },
+  { id: 'J-23', title: 'SET_ORIENTATION portrait', exp: '鎖直式', run: () => send('SET_ORIENTATION', { orientation: 'portrait' }) },
+  { id: 'J-24', title: 'SET_ORIENTATION auto', exp: '解除鎖定，跟隨感應器', run: () => send('SET_ORIENTATION', { orientation: 'auto' }) },
+  { id: 'J-25', title: 'HAPTIC', exp: '無反應（刻意未實作），不 crash', run: () => send('HAPTIC', null) },
+  { id: 'J-06', title: '壞 JSON', exp: '靜默忽略；Debug 面板 Bridge 分頁出現一筆 INVALID', run: () => raw('not json at all') },
+  { id: 'J-07', title: '未知 type', exp: 'logcat「未處理的訊息: QA_UNKNOWN」，App 正常', run: () => send('QA_UNKNOWN', { a: 1 }) },
+];
+
+/* §6.4 舊版 jsBridge */
+const ACTIONS_LEGACY = [
+  { id: 'J-40', title: '單參數 JSON 字串', exp: '轉 LEGACY_TRACK，路由到 AppsFlyer provider',
+    run: () => legacy(JSON.stringify({ tool: 'Appsflyer', eventName: 'qa_legacy_json', options: { a: 1 } })) },
+  { id: 'J-41', title: '單參數非 JSON 字串', exp: '由 raw 正則抓出 tool / eventName / account，仍能完成登入',
+    run: () => legacy('{"tool":"JVD","eventName":"playerLogin","options":{"account":"' + account() + '"}}亂碼') },
+  { id: 'J-42', title: '雙參數', exp: '轉 LEGACY_TRACK', run: () => legacy('Appsflyer', { eventName: 'qa_legacy_two' }) },
+  { id: 'J-43', title: 'provider 大小寫 ×3', exp: '三種寫法都對到同一個 provider（大小寫不敏感）',
+    run: () => { ['Appsflyer', 'appsflyer', 'APPSFLYER'].forEach(t => legacy(t, { eventName: 'qa_case_' + t })); } },
+  { id: 'J-44', title: 'playerLogin 雙參數', exp: '直接轉 PLAYER_LOGIN', run: () => legacy('playerLogin', { account: account() }) },
+  { id: 'J-45', title: 'JVD + playerLogin', exp: '走玩家登入而非 tracking',
+    run: () => legacy(JSON.stringify({ tool: 'JVD', eventName: 'playerLogin', options: { account: account() } })) },
+  { id: 'J-46', title: '缺 tool / eventName', exp: 'logcat warn，不 crash', run: () => legacy(JSON.stringify({ tool: 'X' })) },
+  { id: 'J-47', title: 'iOS webkit 舊格式', exp: '等同 jsBridge 單參數',
+    run: () => {
+      const h = ((window.webkit || {}).messageHandlers || {}).jsBridge;
+      if (!h) return log('✗ webkit.messageHandlers.jsBridge 不存在');
+      h.postMessage(JSON.stringify({ tool: 'Adjust', eventName: 'qa_webkit' }));
+      log('→ webkit jsBridge.postMessage');
+    } },
+  { id: 'J-48', title: 'jsBridge.on 訂閱後送 GET_TOKEN', exp: 'handler 有被呼叫（下方 log 出現 jsBridge.on 收到）',
+    run: () => {
+      if (!window.jsBridge || !window.jsBridge.on) return log('✗ jsBridge.on 不存在');
+      window.jsBridge.on('TOKEN_RESPONSE', p => log('← jsBridge.on 收到 TOKEN_RESPONSE', p));
+      send('GET_TOKEN', null);
+    } },
+];
+
+/* §6.5 原生 Dialog */
+const ACTIONS_DIALOG = [
+  { id: 'J-50', title: 'alert()', exp: '原生對話框，只有「確定」，<b>不顯示網域</b>', run: () => { alert('QA alert 測試'); log('alert() 已呼叫'); } },
+  { id: 'J-51', title: 'confirm()', exp: '原生對話框（標題 Confirm）＋ 同步回傳值應為 false',
+    run: () => { const r = confirm('QA confirm 測試'); log('confirm() 同步回傳 = ' + JSON.stringify(r) + (r === false ? '  ✓ 符合 J-52' : '  ✗ 與 J-52 不符')); } },
+  { id: 'J-53', title: 'prompt()', exp: '原生對話框（標題 Input）＋ 同步回傳值應為 null',
+    run: () => { const r = prompt('QA prompt 測試', '預設值'); log('prompt() 同步回傳 = ' + JSON.stringify(r) + (r === null ? '  ✓ 符合 J-54' : '  ✗ 與 J-54 不符')); } },
+];
+
+/* §8 推播 / 玩家帳號 */
+const ACTIONS_PUSH = [
+  { id: 'P-04', title: 'GET_TOKEN 取 FCM token', exp: '下方面板顯示 token 長度；未設 Firebase 時為 null', run: () => send('GET_TOKEN', null) },
+  { id: 'J-19', title: 'PLAYER_LOGIN', exp: '觸發 login signal（S-02）＋ Merchant 玩家註冊（P-12）', run: () => send('PLAYER_LOGIN', { account: account() }) },
+  { id: 'J-20', title: 'PLAYER_LOGIN 缺 account', exp: 'logcat warn「PLAYER_LOGIN 缺少 account」，不 crash', run: () => send('PLAYER_LOGIN', {}) },
+  { id: 'P-13', title: '重複送同一 account', exp: '只打一次 Merchant API（去重快取）', run: () => { send('PLAYER_LOGIN', { account: account() }); send('PLAYER_LOGIN', { account: account() }); } },
+  { id: 'J-21', title: 'PLAYER_LOGOUT', exp: '清除 account 與註冊快取；再登入會重打 API（P-15）', run: () => send('PLAYER_LOGOUT', null) },
+];
+
+/* §3 WebView 行為 */
+const ACTIONS_WEBVIEW = [
+  { id: 'C-06', title: '注入壞掉的圖片與 script', exp: '主頁<b>正常顯示</b>，不可整頁換成錯誤畫面；logcat 有 ignored subresource load error',
+    run: () => {
+      const box = document.getElementById('junkBox');
+      const img = new Image(); img.src = '/qa-missing-' + Date.now() + '.png'; img.alt = '壞圖';
+      img.style.cssText = 'width:40px;height:40px;border:1px dashed #2a323b';
+      const s = document.createElement('script'); s.src = '/qa-missing-' + Date.now() + '.js';
+      box.append(img, s);
+      log('已注入壞掉的 img / script 子資源');
+    } },
+  { id: 'L-16', title: '插入跨源 iframe', exp: 'iframe 正常載入，<b>不可</b>被當成主導航而外開瀏覽器',
+    run: () => {
+      const f = document.createElement('iframe');
+      f.src = 'https://example.com';
+      document.getElementById('frameBox').append(f);
+      log('已插入跨源 iframe');
+    } },
+];
+
+/* §7 Deep Link / §12 Debug 解鎖：只有在系統瀏覽器點才有效 */
+const DEEPLINKS = [
+  { id: 'D-10', title: 'navigate', exp: '主 WebView 直接載入指定 URL', make: s => s + '://navigate?url=' + encodeURIComponent(selfUrl('nav=D-10')) },
+  { id: 'D-11', title: 'modal', exp: 'App 啟動並開 Modal', make: s => s + '://modal?url=' + encodeURIComponent(selfUrl('layer=modal')) },
+  { id: 'D-16', title: '未知 host', exp: '不做事，但仍 fallback 載入預設 appUrl（<b>不可黑畫面</b>）', make: s => s + '://whatever' },
+  { id: 'D-17', title: '缺 url 參數', exp: '同上，不黑畫面', make: s => s + '://navigate' },
+  { id: 'G-03', title: 'debug-unlock', exp: '搭配 S3 features.debugPanel=true → 右上出現 Debug 按鈕', make: s => s + '://debug-unlock' },
+];
+
+/* ────────────────────────────────────────────────────────────
+   共用行為
+   ──────────────────────────────────────────────────────────── */
+function account() { return (document.getElementById('acct') || {}).value || 'qa001'; }
+
+function legacy() {
+  if (!window.jsBridge) return log('✗ window.jsBridge 不存在');
+  window.jsBridge.postMessage.apply(window.jsBridge, arguments);
+  log('→ jsBridge.postMessage', Array.prototype.slice.call(arguments));
+}
+
+/* 原生回注 confirm / prompt 結果時會呼叫這支；注入腳本預設是 no-op stub（J-55） */
+window.__resolveDialog = function (callbackId, result) {
+  log('← __resolveDialog(' + callbackId + ', ' + JSON.stringify(result) + ')  ✓ J-55 回注有到');
+};
+
+function bindBridgeEvents() {
+  if (!window.ReactNativeBridge || !window.ReactNativeBridge.on) return false;
+  window.ReactNativeBridge.on('TOKEN_RESPONSE', payload => {
+    log('← TOKEN_RESPONSE', payload);
+    renderToken(payload);
+  });
+  window.ReactNativeBridge.on('PUSH_NOTIFICATION', payload => {
+    log('← PUSH_NOTIFICATION', payload);
+    const box = document.getElementById('pushBox');
+    if (box) box.textContent = new Date().toLocaleTimeString() + '  ' + JSON.stringify(payload, null, 2) + '\n\n' + box.textContent;
+  });
+  return true;
+}
+
+/* ────────────────────────────────────────────────────────────
+   畫面組裝
+   ──────────────────────────────────────────────────────────── */
+function rowTest(t) {
+  const node = el('div', 't' + (t.risk ? ' risk' : ''));
+  node.append(el('div', 't-id', t.id));
+  const body = el('div', 't-b');
+  body.append(el('div', 't-title', t.title), el('div', 't-exp', '預期：' + t.exp));
+  node.append(body);
+
+  const act = el('div', 't-act');
+  if (t.href !== undefined) {
+    const a = el('a', 'go' + (t.risk ? ' warn' : ''), t.blank ? '_blank' : '執行');
+    a.href = t.href;
+    if (t.blank) a.target = '_blank';
+    a.addEventListener('click', () => { trace(t.id + ' ' + t.title); log('點擊連結 ' + t.id + ' → ' + t.href); });
+    act.append(a);
+  } else {
+    const b = el('button', 'go', '執行');
+    b.addEventListener('click', () => { trace(t.id + ' ' + t.title); t.run(); });
+    act.append(b);
+  }
+  node.append(act);
+  return node;
+}
+
+function section(id, title, hint, rows) {
+  const s = el('section');
+  s.id = id;
+  s.append(el('h2', null, title));
+  if (hint) s.append(el('p', 'hint', hint));
+  (rows || []).forEach(r => s.append(r));
+  return s;
+}
+
+function checkRow(id, title, state, detail) {
+  const n = el('div', 'chk');
+  n.append(el('div', 't-id', id));
+  const b = el('div', 't-b');
+  b.append(el('div', 't-title', title), el('div', 't-exp', detail));
+  n.append(b, el('span', 'pill ' + state, state.toUpperCase()));
+  return n;
+}
+
+/* 行銷版號 → API level。K-06 要的是 API level，送成行銷版號就是錯的。 */
+const API_LEVEL = { 9: [28], 10: [29], 11: [30], 12: [31, 32], 13: [33], 14: [34], 15: [35], 16: [36] };
+
+function apiLevel(value) {
+  const got = String(value);
+  if (!/^\d+$/.test(got)) return { state: 'fail', detail: got + ' 不是數字字串' };
+  const marketing = (navigator.userAgent.match(/Android (\d+)/) || [])[1];
+  const expect = API_LEVEL[marketing];
+  if (!expect) return { state: 'info', detail: got + '（UA 讀不到 Android 版本，只能確認是數字）' };
+  if (expect.indexOf(Number(got)) >= 0) return { state: 'pass', detail: got + ' = Android ' + marketing + ' 的 API level' };
+  if (got === marketing) return { state: 'fail', detail: got + ' 是行銷版號，應送 API level ' + expect.join('/') };
+  return { state: 'fail', detail: got + '，Android ' + marketing + ' 應為 ' + expect.join('/') };
+}
+
+function renderToken(p) {
+  const box = document.getElementById('tokenBox');
+  if (!box) return;
+  box.innerHTML = '';
+  const d = (p && p.deviceInfo) || {};
+  const uaVer = (navigator.userAgent.match(/; JVDApp Android ([\d.]+) wv/) || [])[1];
+  let firstSeen = null;
+  try { firstSeen = localStorage.getItem('qaDeviceId'); if (!firstSeen && d.deviceId) localStorage.setItem('qaDeviceId', d.deviceId); } catch (e) {}
+
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  box.append(
+    checkRow('J-30', 'deviceId 為 UUIDv4', uuid.test(d.deviceId || '') ? 'pass' : 'fail', String(d.deviceId)),
+    checkRow('J-30', 'deviceId 與本機首次記錄相同', !firstSeen ? 'info' : (firstSeen === d.deviceId ? 'pass' : 'fail'),
+      firstSeen ? '首次記錄 ' + firstSeen : '本次為首次記錄，重啟 App 後再測一次'),
+    checkRow('J-31', 'platform 為小寫 android', d.platform === 'android' ? 'pass' : 'fail', String(d.platform)),
+    checkRow('J-32', 'osVersion 為 API level 而非行銷版號', apiLevel(d.osVersion).state, apiLevel(d.osVersion).detail),
+    checkRow('J-33', 'appVersion 與 UA 後綴一致', d.appVersion && d.appVersion === uaVer ? 'pass' : 'fail',
+      'payload ' + d.appVersion + ' / UA ' + uaVer),
+    checkRow('J-34', 'fcmToken', p && p.fcmToken ? 'pass' : 'info',
+      p && p.fcmToken ? '長度 ' + p.fcmToken.length + '：' + p.fcmToken.slice(0, 24) + '…' : 'null（未設 Firebase 或未授權，Web 端須容錯）'),
+    checkRow('J-35', 'launchSource', 'info', String(p && p.launchSource) + '（一般啟動 normal／deep link／推播點擊各測一次）')
+  );
+}
+
+function renderEnv() {
+  const e = window.__early;
+  const uaVer = (navigator.userAgent.match(/; JVDApp Android ([\d.]+) wv/) || [])[1];
+  document.getElementById('env').innerHTML =
+    '層別 <b>' + LAYER + '</b> · 同源基準 <b>' + location.origin + '</b><br>' +
+    'App 版本 <b>' + (uaVer || '不在 App 內') + '</b> · ' + (IN_APP ? '目前在 App WebView 內' : '目前在一般瀏覽器') + '<br>' +
+    'UA <code>' + navigator.userAgent + '</code>';
+
+  let storage = 'fail';
+  try { localStorage.setItem('qaProbe', '1'); sessionStorage.setItem('qaProbe', '1'); storage = localStorage.getItem('qaProbe') === '1' ? 'pass' : 'fail'; } catch (err) {}
+
+  return [
+    checkRow('C-01', 'UA 後綴 "; JVDApp Android <版本> wv"', uaVer ? 'pass' : 'fail', uaVer ? '版本 ' + uaVer : '找不到後綴'),
+    checkRow('J-01', '注入早於頁面第一段腳本', e.bridge === 'object' ? 'pass' : 'fail', 'typeof ReactNativeBridge = ' + e.bridge),
+    checkRow('J-03', 'ReactNativeWebView.postMessage 傳輸層', e.transport === 'function' ? 'pass' : 'fail', 'typeof = ' + e.transport),
+    checkRow('J-04', '_isNativeBridge 旗標', e.flag ? 'pass' : 'fail', String(e.flag)),
+    checkRow('J-05', 'jsBridge / webkit 舊介面', e.jsBridge === 'object' && e.webkit === 'object' ? 'pass' : 'fail',
+      'jsBridge=' + e.jsBridge + ' · webkit.messageHandlers.jsBridge=' + e.webkit),
+    checkRow('J-02', 'ReactNativeBridgeReady 事件', e.ready ? 'pass' : 'info',
+      e.ready ? '有收到' : '收不到屬正常：注入在 document-start，早於頁面任何腳本註冊監聽器。就緒請改判 _isNativeBridge'),
+    checkRow('C-02', 'localStorage / sessionStorage', storage, storage === 'pass' ? '可讀寫' : '不可用'),
+  ];
+}
+
+function copyReport() {
+  const lines = ['原生 Android 驗收測試頁 — 自檢結果', new Date().toLocaleString(), 'UA: ' + navigator.userAgent, ''];
+  document.querySelectorAll('.chk').forEach(n => {
+    lines.push(n.querySelector('.pill').textContent.padEnd(5) + n.querySelector('.t-id').textContent + '  ' +
+      n.querySelector('.t-title').textContent + '  — ' + n.querySelector('.t-exp').textContent);
+  });
+  const text = lines.join('\n');
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+    .then(() => log('已複製自檢結果到剪貼簿'))
+    .catch(() => log('無法存取剪貼簿，結果如下：\n' + text));
+}
+
+/* ── main 版 ─────────────────────────────────────────────── */
+function buildMain() {
+  const main = document.getElementById('main');
+
+  const navResult = qs.get('nav');
+  if (navResult) {
+    main.append(el('div', 'banner ok', '✓ <b>' + navResult + '</b> 導航成功：主 WebView 就地載入本頁（沒有外開瀏覽器、沒有進 outside 層）'));
+  }
+  try {
+    const last = JSON.parse(sessionStorage.getItem('qaLastClick') || 'null');
+    if (last && Date.now() - last.t < 10 * 60 * 1000) {
+      main.append(el('div', 'banner warn',
+        '上次執行：<b>' + last.id + '</b>（' + Math.round((Date.now() - last.t) / 1000) + ' 秒前）。本頁仍在 → 主畫面沒有被該連結取代。'));
+    }
+  } catch (e) {}
+
+  main.append(section('env-sec', '環境自檢（自動判定）',
+    '一載入就跑完，不需操作。對應 C-01／C-02／J-01～J-05。', renderEnv()));
+  const copyBtn = el('button', 'go ghost', '複製自檢結果');
+  copyBtn.style.width = '100%';
+  copyBtn.addEventListener('click', copyReport);
+  document.getElementById('env-sec').append(copyBtn);
+
+  const portLink = Object.assign({}, LINKS_SAFE.find(l => l.id === 'L-07'));
+  portLink.href = location.protocol + '//' + location.hostname + ':8443/qa-port-test';
+  const safe = LINKS_SAFE.map(l => rowTest(l.id === 'L-07' ? portLink : l));
+  main.append(section('links', '§4 連結攔截 — 安全組',
+    '點完會留在本頁或只是開外部 App，可以連續點。<b>L-01 / L-15 同源那兩顆會重新載入本頁並自動顯示成功橫幅。</b>', safe));
+
+  main.append(section('links-risk', '§4 連結攔截 — 會帶走主畫面',
+    'App 沒有返回鍵處理（K-01），主畫面被導走後<b>只能重開 App 回來</b>。建議把 S3 config 的 appUrl 設成本頁，重開就會回到這裡。',
+    LINKS_RISKY.map(l => rowTest(Object.assign({ risk: true }, l)))));
+
+  main.append(section('layers', '§5 四層 WebView', 'Modal / Overlay 會載入本頁的對應層別版本，內含該層專屬的測試按鈕。',
+    ACTIONS_LAYER.map(rowTest)));
+
+  main.append(section('bridge', '§6 Bridge 訊息', null, ACTIONS_BRIDGE.map(rowTest)));
+
+  const tokenSec = section('token', 'TOKEN_RESPONSE 欄位判定',
+    '按上面的 GET_TOKEN 後，這裡會自動判定 J-30～J-35。deviceId 穩定性要重啟 App 後再看一次。');
+  tokenSec.append(el('div', null, '<div id="tokenBox"></div>'));
+  main.append(tokenSec);
+
+  const acctSec = section('acct', '玩家帳號（給 PLAYER_LOGIN 用）');
+  acctSec.append(el('div', 'row', '<input type="text" id="acct" value="qa001" />'));
+  main.append(acctSec);
+
+  main.append(section('legacy', '§6.4 舊版 jsBridge 相容層',
+    '網頁端不需改動，舊站台的三種呼叫形態都要能通。', ACTIONS_LEGACY.map(rowTest)));
+
+  main.append(section('dialog', '§6.5 原生 Dialog 攔截',
+    'confirm / prompt 的同步回傳值會直接印在 log；本頁已覆寫 <code>__resolveDialog</code>，按下確定／取消後會看到回注結果（J-55）。',
+    ACTIONS_DIALOG.map(rowTest)));
+
+  const pushSec = section('push', '§8 推播與玩家註冊',
+    '前景推播不會出現在通知列，而是送 PUSH_NOTIFICATION 進主 WebView（P-05／P-06），收到的內容會列在下面。',
+    ACTIONS_PUSH.map(rowTest));
+  pushSec.append(el('pre', 'out', ''));
+  pushSec.lastChild.id = 'pushBox';
+  pushSec.lastChild.textContent = '等待前景推播…';
+  main.append(pushSec);
+
+  const wvSec = section('webview', '§3 WebView 行為', null, ACTIONS_WEBVIEW.map(rowTest));
+  wvSec.append(el('div', null, '<div id="junkBox" class="row"></div><div id="frameBox"></div>'));
+  wvSec.append(el('div', 'hint', 'C-03 免手勢自動播放：貼一個可播放的影片 URL 後按載入。'));
+  const vrow = el('div', 'row', '<input type="text" id="videoUrl" placeholder="https://…/sample.mp4" />');
+  const vbtn = el('button', 'go', '載入');
+  vbtn.addEventListener('click', () => {
+    const url = document.getElementById('videoUrl').value.trim();
+    if (!url) return log('請先填影片 URL');
+    const v = document.createElement('video');
+    v.src = url; v.autoplay = true; v.muted = true; v.loop = true; v.playsInline = true;
+    v.style.cssText = 'width:100%;border-radius:8px;background:#000';
+    v.addEventListener('playing', () => log('✓ C-03 影片自動播放成功'));
+    document.getElementById('videoBox').innerHTML = '';
+    document.getElementById('videoBox').append(v);
+  });
+  vrow.append(vbtn);
+  wvSec.append(vrow, el('div', null, '<div id="videoBox"></div>'));
+  wvSec.append(el('div', 'hint', 'C-08 鍵盤不遮擋：點下面這個貼在最底部的輸入框，版面應該上推。'));
+  wvSec.append(el('div', 'row', '<input type="text" placeholder="點我叫出鍵盤" />'));
+  main.append(wvSec);
+
+  const dlSec = section('deeplink', '§7 Deep Link / §12 Debug 解鎖',
+    IN_APP
+      ? '<b>這一區在 App 內點沒有用。</b>自訂 scheme 在 WebView 內只會走連結攔截。請用系統 Chrome 開本頁、或改用 adb 指令。'
+      : '目前在一般瀏覽器，可以直接點。App 未安裝時不會有反應。');
+  const schemeRow = el('div', 'row', '<input type="text" id="scheme" value="jvddemo" />');
+  const applyBtn = el('button', 'go ghost', '套用 scheme');
+  applyBtn.addEventListener('click', renderDeepLinks);
+  schemeRow.append(applyBtn);
+  dlSec.append(schemeRow, el('div', null, '<div id="dlBox"></div>'));
+  dlSec.append(el('p', 'hint', 'adb 版本：<code>adb shell am start -a android.intent.action.VIEW -d "jvddemo://debug-unlock"</code>'));
+  main.append(dlSec);
+
+  renderDeepLinks();
+  buildNav([
+    ['env-sec', '環境'], ['links', '連結'], ['links-risk', '連結⚠'], ['layers', '分層'],
+    ['bridge', 'Bridge'], ['token', 'Token'], ['legacy', 'Legacy'], ['dialog', 'Dialog'],
+    ['push', '推播'], ['webview', 'WebView'], ['deeplink', 'DeepLink'],
+  ]);
+}
+
+function renderDeepLinks() {
+  const scheme = (document.getElementById('scheme') || {}).value || 'jvddemo';
+  const box = document.getElementById('dlBox');
+  box.innerHTML = '';
+  DEEPLINKS.forEach(d => {
+    const url = d.make(scheme);
+    const node = rowTest({ id: d.id, title: d.title + '（' + url.slice(0, 34) + '…）', exp: d.exp, href: url });
+    const copy = el('button', 'go ghost', '複製');
+    copy.addEventListener('click', () => {
+      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+        .then(() => log('已複製：' + url)).catch(() => log(url));
+    });
+    node.querySelector('.t-act').append(copy);
+    box.append(node);
+  });
+}
+
+/* ── modal / overlay / outside 版 ────────────────────────── */
+function buildLayer() {
+  const main = document.getElementById('main');
+  document.getElementById('layerTag').textContent = LAYER + (qs.get('v') ? ' v' + qs.get('v') : '');
+  document.getElementById('layerTag').className = 'layer-tag';
+
+  const rows = [
+    { id: 'J-36', title: 'GET_TOKEN（本層）', exp: 'TOKEN_RESPONSE 要回到<b>本層</b>，下方 log 看得到', run: () => send('GET_TOKEN', null) },
+    { id: 'J-16', title: 'NAVIGATE（非 main 層）', exp: '用<b>系統瀏覽器</b>外開，不在本層導航', run: () => send('NAVIGATE', { url: 'https://example.com' }) },
+  ];
+
+  if (LAYER === 'modal') {
+    rows.push(
+      { id: 'W-03', title: 'CLOSE_MODAL', exp: 'Modal 關閉，主畫面維持原狀', run: () => send('CLOSE_MODAL', null) },
+      { id: 'J-14', title: 'CLOSE_OVERLAY（modal 層）', exp: '忽略，什麼都不發生', run: () => send('CLOSE_OVERLAY', null) },
+      { id: 'L-17', title: '跨源 https 連結', exp: '就地載入（modal 層只走 DEFAULT_LINK_RULES，無同源判斷）', href: 'https://example.com' },
+      { id: 'L-17', title: '同源 /service 連結', exp: '就地載入，<b>不可</b>開 outside 層', href: '/service' }
+    );
+  } else if (LAYER === 'overlay') {
+    rows.push(
+      { id: 'W-07', title: 'CLOSE_OVERLAY（overlay 層）', exp: 'Overlay 關閉', run: () => send('CLOSE_OVERLAY', null) },
+      { id: 'L-17', title: '跨源 https 連結', exp: '就地載入', href: 'https://example.com' }
+    );
+  } else {
+    rows.push(
+      { id: 'W-09', title: 'CLOSE_OVERLAY（outside 層）', exp: '關閉 <b>outside</b> 層', run: () => send('CLOSE_OVERLAY', null) },
+      { id: 'L-18', title: '跨源 https 連結', exp: '全部就地載入，outside 層不攔截', href: 'https://example.com' },
+      { id: 'L-18', title: 'tel: 連結', exp: 'outside 層不攔截 → 交給 WebView 自己處理', href: 'tel:0912345678' }
+    );
+  }
+
+  main.append(el('div', 'banner warn',
+    '這是 <b>' + LAYER + '</b> 層的測試頁。浮動膠囊的 Refresh / Whirl / Quit（W-13～W-17）請直接在畫面右上操作。'));
+  main.append(section('env-sec', '環境自檢（本層）', null, renderEnv()));
+  main.append(section('layer', '§5／§6 本層專屬', null, rows.map(rowTest)));
+  buildNav([['env-sec', '環境'], ['layer', '本層測試']]);
+}
+
+function buildNav(items) {
+  const nav = document.getElementById('nav');
+  items.forEach(([id, label]) => {
+    const a = el('a', null, label);
+    a.href = '#' + id;
+    nav.append(a);
+  });
+}
+
+/* ────────────────────────────────────────────────────────── */
+if (LAYER === 'main') buildMain(); else buildLayer();
+if (!bindBridgeEvents()) setTimeout(() => { if (!bindBridgeEvents()) log('✗ 綁定 bridge 事件失敗：ReactNativeBridge.on 不存在'); }, 400);
+log('測試頁就緒：層別 ' + LAYER + '，同源基準 ' + location.origin);
+</script>
+</body>
+</html>
