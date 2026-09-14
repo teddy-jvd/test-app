@@ -1,7 +1,7 @@
 {
-  "appUrl": "https://teddy-jvd.github.io/test-app/full-debug.html",
+  "appUrl": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
   "dev_appUrl": "https://new-fatcat-dev.panpancat.click/",
-  "test_url": "https://teddy-jvd.github.io/test-app/full-debug.html",
+  "test_url": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
   "merchantApiBaseUrl": "https://cmcat.jvdev.cc",
   "signalApiUrl": "https://signal-public.micromicro.work/v1/events",
   "siteCode": "REMOTE_SITE_CODE",
