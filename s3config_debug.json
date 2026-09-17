@@ -1,1 +1,15 @@
-{"appUrl":"https://new-fatcat-dev.1a2b333.com/","features":{},"maintenance":{"enabled":false,"message":""}}
+{
+  "appUrl": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
+  "dev_appUrl": "https://new-fatcat-dev.panpancat.click/",
+  "test_url": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
+  "merchantApiBaseUrl": "https://cmcat.jvdev.cc",
+  "signalApiUrl": "https://signal-public.micromicro.work/v1/events",
+  "siteCode": "REMOTE_SITE_CODE",
+  "features": {
+    "debugPanel": true
+  },
+  "maintenance": {
+    "enabled": false,
+    "message": ""
+  }
+}
