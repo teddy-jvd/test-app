@@ -2,8 +2,8 @@
   "appUrl": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
   "dev_appUrl": "https://new-fatcat-dev.panpancat.click/",
   "test_url": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
-  "merchantApiBaseUrl": "https://cmcat.jvdev.cc",
-  "signalApiUrl": "https://signal-public.micromicro.work/v1/events",
+  "merchantApiBaseUrl": "https://fatcat-signal-inspector.scmou104.workers.dev/i/1a0d8b4c135d0d5c",
+  "signalApiUrl": "https://fatcat-signal-inspector.scmou104.workers.dev/i/1a0d8b4c135d0d5c/v1/events",
   "siteCode": "REMOTE_SITE_CODE",
   "features": {
     "debugPanel": true
