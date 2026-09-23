@@ -1,7 +1,8 @@
 {
-  "appUrl": "https://new-fatcat-dev-unstable.jvdev.cc/en",
+  "appUrl": "https://www-dev.panpancat.click/",
   "dev_appUrl": "https://new-fatcat-dev.panpancat.click/",
   "dev_unstable": "https://new-fatcat-dev-unstable.jvdev.cc/en",
+  "dev_1.0": "https://www-dev.panpancat.click/",
   "test_url": "https://teddy-jvd.github.io/test-app/qa-native-android.html",
   "merchantApiBaseUrl": "https://fatcat-signal-inspector.scmou104.workers.dev/i/1a0d8b4c135d0d5c",
   "signalApiUrl": "https://fatcat-signal-inspector.scmou104.workers.dev/i/1a0d8b4c135d0d5c/v1/events",
