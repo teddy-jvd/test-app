@@ -9,7 +9,7 @@
   <key>PayloadIdentifier</key>
   <string>com.jvdhybrid.webclip.debugbrand</string>
   <key>PayloadUUID</key>
-  <string>A296A6DB-7CC0-4F20-AC24-F4B0AD2569C4</string>
+  <string>6A14A0A9-6471-4167-BFC5-89622A650DCD</string>
   <key>PayloadDisplayName</key>
   <string>安裝 debugbrand 到主畫面</string>
   <key>PayloadDescription</key>
@@ -28,7 +28,7 @@
       <key>PayloadIdentifier</key>
       <string>com.jvdhybrid.webclip.debugbrand.clip</string>
       <key>PayloadUUID</key>
-      <string>4040C110-EB19-45A7-A7D2-1F2C0D8F2B67</string>
+      <string>829C8816-6310-4550-841C-026CE624AD56</string>
       <key>PayloadDisplayName</key>
       <string>debugbrand</string>
       <key>URL</key>
